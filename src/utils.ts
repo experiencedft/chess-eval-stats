@@ -4,12 +4,9 @@ const headers = {
     Authorization: 'Bearer' + process.env.PERSONAL_ACCESS_TOKEN,
 };
 
-const getLocalEval = function (fen: string) {
-    /*
-    @dev Probably needs to be optimized for async fetching.
-    */
-    let result = fetch('https://lichess.org/api/cloud-eval/fen=' + fen)
-        .then(res => res.json())
+const getLocalEval = async (fen: string):Promise<number> => {
+    let result = (await fetch('https://lichess.org/api/cloud-eval/fen=' + fen)).json()
+ 
     return result["pvs"][0]["cp"]
 }
 
@@ -19,13 +16,11 @@ const getLocalEval = function (fen: string) {
  * @param {number} eval_threshold The engine advantage cutoff for which we're investigating the predictive ability.
  * @param {move_cutoff} The number of moves before which we want to investigate the predictive ability of the evaluation.
 */
-const getSingleGameOutcomeCorrelation = function (game_fen: Array<string>, eval_threshold: Number, move_cutoff: Number) {
-    let isBelowThreshold = true;
-    let index = 0
+const getSingleGameOutcomeCorrelation = async (game_fen: Array<string>, eval_threshold: number, move_cutoff: number): Promise<number> => {
     const WINNING_SIDE = parseInt(game_fen[0], 10)
 
-    while (isBelowThreshold) {
-        const engine_eval = getLocalEval(game_fen[index++]);
+    for (let index:number = 0; index < move_cutoff * 2; index++) {
+        const engine_eval = await getLocalEval(game_fen[index]);
         if (Math.abs(engine_eval) > eval_threshold) {
             return (engine_eval * WINNING_SIDE > 0) ? 1 : 0;
         }
@@ -33,3 +28,4 @@ const getSingleGameOutcomeCorrelation = function (game_fen: Array<string>, eval_
 
     return NaN
 }
+
