@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "extract": "ts-node src/extract.ts",
     "go": "ts-node src/app.ts",
     "dev": "ts-node-dev --respawn ./src/app.ts"
   },
