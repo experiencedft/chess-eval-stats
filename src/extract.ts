@@ -4,7 +4,7 @@ import * as cp from 'child_process'
 
 const MOVES:number = 10
 
-export const PGNDatabaseParser = async (filename: string, callback: (pgn: string) => void): Promise<void> => {
+const PGNDatabaseParser = (filename: string, callback: (pgn: string) => void) => {
     let currentPGN: string = ""
     let pgnCounter: number = 0
 
@@ -40,28 +40,36 @@ const fenExtract = (pgn: string): string[] => {
         .map((el) => el.replace(new RegExp("[ }]+$"), ''))
 }
 
-const pgnExtract = (pgn: string, callback: (res: string[]) => void) => {
-    const cmd = 'pgn-extract';
-    const args = ['--fencomments']
-    let sub = cp.spawn(cmd, args, { stdio: ['pipe', 'pipe', 'pipe'] });
 
-    sub.stdin.write(pgn)
+const pgnExtractWithTempFile = (pgn: string, callback: (res: string[]) => void) => {
+    const tempFileName = './pgn.game.temp'; 
+    fs.writeFileSync(tempFileName, pgn)
 
-    sub.stderr.on('data', (data) => {
-        console.error(`stderr: ${data}`);
-    });
+    const cmd = 'pgn-extract --fencomments --quiet -s ./pgn.game.temp';
 
-    sub.stdout.on('data', (data) => {
-        callback(fenExtract(data.toString()))
+    const fensedPGN = cp.execSync(cmd)
 
-        sub.kill()
-    })
-};
+    fs.unlinkSync(tempFileName)
 
-const processPGN = async (pgn: string): Promise<void> => {
-    pgnExtract(pgn, (data) => {
-        console.log(data)
-    })
+    callback(fenExtract(fensedPGN.toString()))
 }
 
-PGNDatabaseParser('./data/test_db.pgn', processPGN)
+const processPGN = (pgn: string) => {
+    pgnExtractWithTempFile(pgn, (data) => {
+        // console.log(data)
+    })
+
+    // pgnExtract(pgn, (data) => {
+    //     // console.log(data)
+    // })
+}
+
+// PGNDatabaseParser('./data/test_db.pgn', processPGN)
+
+
+const main = () => {
+    PGNDatabaseParser('./data/test_db.pgn', processPGN)
+    // process.exit(0)
+}
+
+main()
