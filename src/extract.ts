@@ -2,7 +2,19 @@ import * as fs from 'fs';
 import readline from 'readline'
 import * as cp from 'child_process'
 
-const MOVES:number = 10
+const MOVES: number = 10
+
+const isClassicalGame = (pgn: string): boolean => {
+    const rx = /chess\s*960|blitz|rapid|9LX|Fischer Random|titled tuesday/ig;
+
+    const isClassical = !(rx.test(pgn));
+
+    // if (!isClassical) {
+    //     console.log(pgn)
+    // }
+
+    return isClassical;
+}
 
 const PGNDatabaseParser = (filename: string, callback: (pgn: string) => void) => {
     let currentPGN: string = ""
@@ -14,10 +26,11 @@ const PGNDatabaseParser = (filename: string, callback: (pgn: string) => void) =>
 
     rl.on('line', (line: string) => {
         if (line.startsWith('[Event ')) {
-            pgnCounter++
-
             if (currentPGN.length > 0) {
-                callback(currentPGN);
+                if (isClassicalGame(currentPGN)) {
+                    pgnCounter++
+                    callback(currentPGN);
+                }
                 currentPGN = line;
             } else {
                 currentPGN += '\n' + line;
@@ -32,17 +45,35 @@ const PGNDatabaseParser = (filename: string, callback: (pgn: string) => void) =>
     })
 }
 
+let countPositions: string[] = []
+
 const fenExtract = (pgn: string): string[] => {
     let rx = /{[^}]+}/g;
 
-    return Array.from(pgn.matchAll(rx)).map((rxma) => rxma[0].replace('\n', ''))
+    const positions = Array.from(pgn.matchAll(rx)).map((rxma) => rxma[0].replace('\n', ''))
         .map((el) => el.replace(new RegExp("^[ {]+"), ''))
         .map((el) => el.replace(new RegExp("[ }]+$"), ''))
+
+    // for (let i = 0; i < positions.length; i++) {
+    //     if (countPositions.indexOf(positions[i]) == -1) {
+    //         countPositions.push(positions[i])
+    //     }
+    // }
+
+    const moves = (positions.length < 20) ? positions.length : 20;
+
+    for (let i = 0; i < moves; i++) {
+        if (countPositions.indexOf(positions[i]) == -1) {
+            countPositions.push(positions[i])
+        }
+    }
+
+    return positions
 }
 
 
 const pgnExtractWithTempFile = (pgn: string, callback: (res: string[]) => void) => {
-    const tempFileName = './pgn.game.temp'; 
+    const tempFileName = './pgn.game.temp';
     fs.writeFileSync(tempFileName, pgn)
 
     const cmd = 'pgn-extract --fencomments --quiet -s ./pgn.game.temp';
@@ -57,6 +88,7 @@ const pgnExtractWithTempFile = (pgn: string, callback: (res: string[]) => void) 
 const processPGN = (pgn: string) => {
     pgnExtractWithTempFile(pgn, (data) => {
         // console.log(data)
+        console.log(`unique positions: ${countPositions.length}`)
     })
 
     // pgnExtract(pgn, (data) => {
