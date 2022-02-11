@@ -1,4 +1,5 @@
 import { callbackify } from "util";
+import { EvaluableGame } from "./types";
 
 require('dotenv').config();
 
@@ -27,6 +28,19 @@ const getSingleGameOutcomeCorrelation = async (game_fen: Array<string>, eval_thr
         const engine_eval = await getLocalEval(game_fen[index]);
         if (Math.abs(engine_eval) > eval_threshold) {
             return (engine_eval * WINNING_SIDE > 0) ? 1 : 0;
+        }
+    }
+
+    return NaN
+}
+
+const getSingleGameOutcomeCorrelationTS = async (game: EvaluableGame, eval_threshold: number, move_cutoff: number): Promise<number> => {
+    // Look only at first moves until the move_cutoff*2-th position
+    for (let index:number = 0; index < move_cutoff * 2; index++) {
+        // get evaluation of the local position, possibly cached
+        const engine_eval = game.FENs[index].eval || await getLocalEval(game.FENs[index].FEN);
+        if (Math.abs(engine_eval) > eval_threshold) {
+            return (engine_eval * game.outcome > 0)? 1 : 0; 
         }
     }
 
