@@ -2,6 +2,8 @@ import chess
 import chess.engine
 import chess.svg
 from getLinesWithinEvalBounds import *
+from getLocalEvalFromFEN import *
+import time
 
 # svg = chess.svg.piece(chess.Piece.from_symbol("R"))
 # # print(svg)
@@ -26,8 +28,25 @@ from getLinesWithinEvalBounds import *
 
 ENGINE_PATH = "C:/Users/neptu/Downloads/stockfish_14.1_win_x64_avx2/stockfish_14.1_win_x64_avx2.exe"
 
-FEN = "rnbqk2r/1p2bppp/p3pn2/8/2BP4/P4N2/1P1B1PPP/RN1QK2R w KQkq - 0 9"
+# Test automated search of new lines
 
-DEPTH = 21
+# FEN = "rnbqkb1r/pppp1ppp/4pn2/8/2PP4/8/PP2PPPP/RNBQKBNR w KQkq - 0 3"
+# LOWER = -1
+# UPPER = -0.3
+# DEPTH = 22
+# MULTIPV = 40
 
-print(getLinesWithinEvalBounds(FEN, -0.26, -0.20, DEPTH, 3, ENGINE_PATH))
+# start = time.time()
+# lines = getLinesWithinEvalBounds(FEN, LOWER, UPPER, DEPTH, MULTIPV, ENGINE_PATH)
+# for line in lines:
+#     print(line, "\n")
+# end = time.time()
+# print("\n"+ str(end - start), " seconds")
+
+# Test particular line 
+
+# FEN = "rnbqkb1r/pppp1ppp/4pn2/8/2PP2P1/8/PP2PP1P/RNBQKBNR b KQkq - 0 3"
+
+# print(getLocalEvalFromFEN(FEN, 22, ENGINE_PATH))
+
+print(getLocalEvalFromFEN("rnbqk2r/1p2bppp/p3pn2/8/2BP4/P4N2/1P1B1PPP/RN1QK2R w KQkq - 0 9", 21, ENGINE_PATH))

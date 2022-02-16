@@ -19,7 +19,7 @@ def getLinesWithinEvalBounds(fen: str, lower_bound: float, upper_bound: float, d
 
     # Extract all PVs and their evaluation from engine output and store in a dict
     for i in range(len(info)):
-        eval = info[i]["score"].relative.score()
+        eval = info[i]["score"].white().score()
         uci_line = info[i]["pv"]
         # Needed to convert to PGN notation from UCI
         chess.Board(fen)
