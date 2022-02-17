@@ -1,13 +1,16 @@
 import * as fs from 'fs';
 import readline from 'readline'
 import * as cp from 'child_process'
-import { EvaluableGame, FENObject, GameOutcome } from './types';
+import { EvaluableGame, FENObject, GameOutcome, GameOutcomeName } from './types';
 import { DBFENS, DBGAMES } from './schemas';
 import crypto from 'crypto'
 import mongoose from 'mongoose';
 import nfetch from 'node-fetch'
 
 const MOVES: number = 10
+const DEPTH = 21
+const databaseFilename = './data/10elorange_masters_since2000.pgn'
+let pgns: EvaluableGame[] = []
 
 const isClassicalGame = (pgn: string): boolean => {
     const rx = /chess\s*960|blitz|rapid|9LX|Fischer Random|titled tuesday/ig;
@@ -88,7 +91,11 @@ const extractFEN = (pgn: string): string[] => {
 
     // console.log(positions)
 
-    return positions
+    if (positions.length > MOVES * 2) {
+        return positions.slice(0, MOVES * 2)
+    } else {
+        return positions
+    }
 }
 
 const extractGameOutcome = (pgn: string): GameOutcome => {
@@ -112,9 +119,6 @@ const extractHeader = (pgn: string):string[] => {
     const matches = pgn.matchAll(rx)
 
     const arrayified = Array.from(matches)
-    
-    
-    // console.log(.map((rxma) => rxma[0].replace('\n', '')))
 
     return arrayified.map((rxma) => rxma[0].replace('\n', ''))
 }
@@ -142,8 +146,6 @@ const processPGN = (pgn: string) => {
     pgns.push(eg)
 }
 
-const DEPTH = 21
-
 const getStockfishEval = async (fen: string, depth: number): Promise<number> => {
     const URL = `http://127.0.0.1:8080/cgi-bin/getLocalEvalFromFEN.py?fen=${fen}&depth=${depth}`
 
@@ -165,7 +167,7 @@ const injectCachedEvals = async () => {
         }
 
         for (let fen = 0; fen < pgns[eg].FENs.length; fen++) {
-            // console.log(pgns[eg].FENs[fen].FEN)
+            console.log(pgns[eg].FENs[fen].FEN)
             const thisFEN = pgns[eg].FENs[fen].FEN
 
             const secret = "This is a secret 🤫";
@@ -200,18 +202,13 @@ const injectCachedEvals = async () => {
 
         const gameHash = md5Hasher.update(fenMD5s.join() + pgns[eg].header.join()).digest("hex");
 
-        const one = await DBGAMES.findOne({ md5: gameHash}).lean().exec()
+        const one = await DBGAMES.findOne({ md5: gameHash }).lean().exec()
 
         if ((one === undefined || one === null)) {
-            await DBGAMES.create({ md5: gameHash, fens: fenMD5s })
+            await DBGAMES.create({ md5: gameHash, fens: fenMD5s, outcome: GameOutcomeName[pgns[eg].outcome] })
         }
     }
 }
-
-
-let pgns: EvaluableGame[] = []
-// const databaseFilename = './data/test_db.pgn'
-const databaseFilename = './data/10elorange_masters_since2000.pgn'
 
 
 const main = () => {
