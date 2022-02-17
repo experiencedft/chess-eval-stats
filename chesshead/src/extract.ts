@@ -161,7 +161,7 @@ const injectCachedEvals = async () => {
         let fenMD5s:string[] = []
 
         if (Math.floor(eg / onePercent) == 0) {
-            process.stdout.write(`${eg + 1}/${pgns.length}% processed\r`)
+            process.stdout.write(`${Math.floor(eg / onePercent)}% processed\r`)
         }
 
         for (let fen = 0; fen < pgns[eg].FENs.length; fen++) {
