@@ -3,10 +3,12 @@ const { Schema } = mongoose;
 
 const GameSchema = new Schema({
     md5: { type: String, required: true, index: true },
-    processed: { type: Boolean, required: true, index: true, default: false }
+    fens: [{
+        type: String
+    }]
 }, { collection: 'Games' });
 
-export const DBGames = mongoose.model('GameSchema', GameSchema)
+export const DBGAMES = mongoose.model('GameSchema', GameSchema)
 
 const FENSchema = new Schema({
     md5: { type: String, required: true, index: true },

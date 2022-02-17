@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from http.server import HTTPServer, CGIHTTPRequestHandler
 
 server = HTTPServer(('localhost', 8080), CGIHTTPRequestHandler)
