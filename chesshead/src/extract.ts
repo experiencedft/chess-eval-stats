@@ -157,6 +157,7 @@ const getStockfishEval = async (fen: string, depth: number): Promise<number> => 
 const injectCachedEvals = async () => {
     for (let eg = 0; eg < pgns.length; eg++) {
         let fenMD5s:string[] = []
+        process.stdout.write(`processing ${eg + 1}/${pgns.length}\r`)
 
         for (let fen = 0; fen < pgns[eg].FENs.length; fen++) {
             // console.log(pgns[eg].FENs[fen].FEN)
