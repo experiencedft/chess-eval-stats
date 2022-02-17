@@ -12,4 +12,5 @@ export type FENObject = {
 export type EvaluableGame = {
     outcome: GameOutcome;
     FENs: FENObject[];
+    header: string[];
 }

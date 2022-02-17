@@ -72,7 +72,7 @@ const PGNDatabaseParser = async (filename: string, callback: (pgn: string) => vo
 
 let countPositions: string[] = []
 
-const fenExtract = (pgn: string): string[] => {
+const extractFEN = (pgn: string): string[] => {
     let rx = /{[^}]+}/g;
 
     const positions = Array.from(pgn.matchAll(rx)).map((rxma) => rxma[0].replace('\n', ' ').replace('  ', ' '))
@@ -86,7 +86,7 @@ const fenExtract = (pgn: string): string[] => {
     //     }
     // }
 
-    console.log(positions)
+    // console.log(positions)
 
     return positions
 }
@@ -106,6 +106,19 @@ const extractGameOutcome = (pgn: string): GameOutcome => {
     return GameOutcome.Draw;
 }
 
+const extractHeader = (pgn: string):string[] => {
+    let rx = /\[[^\]]+\]/g;
+
+    const matches = pgn.matchAll(rx)
+
+    const arrayified = Array.from(matches)
+    
+    
+    // console.log(.map((rxma) => rxma[0].replace('\n', '')))
+
+    return arrayified.map((rxma) => rxma[0].replace('\n', ''))
+}
+
 const pgnExtractWithTempFile = (pgn: string): EvaluableGame => {
     const tempFileName = './pgn.game.temp';
     fs.writeFileSync(tempFileName, pgn)
@@ -118,7 +131,8 @@ const pgnExtractWithTempFile = (pgn: string): EvaluableGame => {
 
     return {
         outcome: extractGameOutcome(fensedPGN),
-        FENs: fenExtract(fensedPGN).map((el) => <FENObject>{ FEN: el })
+        FENs: extractFEN(fensedPGN).map((el) => <FENObject>{ FEN: el }),
+        header: extractHeader(fensedPGN)
     }
 }
 
@@ -145,7 +159,7 @@ const injectCachedEvals = async () => {
         let fenMD5s:string[] = []
 
         for (let fen = 0; fen < pgns[eg].FENs.length; fen++) {
-            console.log(pgns[eg].FENs[fen].FEN)
+            // console.log(pgns[eg].FENs[fen].FEN)
             const thisFEN = pgns[eg].FENs[fen].FEN
 
             const secret = "This is a secret 🤫";
@@ -159,24 +173,26 @@ const injectCachedEvals = async () => {
             if (!(one === undefined || one === null)) {
                 pgns[eg].FENs[fen].eval = one.eval;
 
-                console.log(`Found cached eval`)
+                // console.log(`Found cached eval`)
             } else {
                 pgns[eg].FENs[fen].eval = await getStockfishEval(pgns[eg].FENs[fen].FEN, DEPTH)
 
                 await DBFENS.create({ md5: fenHash, fen: thisFEN, eval: pgns[eg].FENs[fen].eval })
 
-                console.log(`Stored S(eval) = ${pgns[eg].FENs[fen].eval}`)
+                // console.log(`Stored S(eval) = ${pgns[eg].FENs[fen].eval}`)
             }
 
             fenMD5s.push(fenHash)
         }
+
+        // console.log(pgns[eg].header)
 
         // store the game
         const secret = "This is a secret 🤫";
 
         const md5Hasher = crypto.createHmac('md5', secret)
 
-        const gameHash = md5Hasher.update(fenMD5s.join()).digest("hex");
+        const gameHash = md5Hasher.update(fenMD5s.join() + pgns[eg].header.join()).digest("hex");
 
         const one = await DBGAMES.findOne({ md5: gameHash}).lean().exec()
 
