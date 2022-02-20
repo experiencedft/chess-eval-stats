@@ -11,12 +11,12 @@ Starting with X = 0.7.
 - Only titled players
 - Greater than 2400 ELO
 - Lower than 10 ELO difference
-- At least one move
+- At least 10 moves
 - Between January 1st 2000 and February 8th 2022
 
 Requirements:
 
 - ts-node, run ``npm install``
-- Python 3, ``pip install chess``
+- Python 3, run ``pip install chess``, ``pip install pymongo`` and ``pip install numpy``
 - pgn-extract.exe (add to PATH). Download [here.](https://www.cs.kent.ac.uk/people/staff/djb/pgn-extract/)
 - Stockfish engine. Download [here](https://stockfishchess.org/download/). Add executable to PATH as STOCKFISH
