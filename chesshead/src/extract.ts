@@ -78,7 +78,8 @@ let countPositions: string[] = []
 const extractFEN = (pgn: string): string[] => {
     let rx = /{[^}]+}/g;
 
-    const positions = Array.from(pgn.matchAll(rx)).map((rxma) => rxma[0].replace('\n', ' ').replace('  ', ' '))
+    const positions = Array.from(pgn.matchAll(rx))
+        .map((rxma) => rxma[0].replace('\n', ' ').replace('\r', ' ').replace('  ', ' '))
         .map((el) => el.replace(new RegExp("^[ {]+"), ''))
         .map((el) => el.replace(new RegExp("[ }]+$"), ''))
 
