@@ -27,7 +27,7 @@ def getLocalEvalFromFEN(fen: str, depth: int, engine_path: str) -> float:
     '''
     engine = chess.engine.SimpleEngine.popen_uci(engine_path)
     board = chess.Board(fen)
-    limits = chess.engine.Limit(depth=depth)
+    limits = chess.engine.Limit(depth=depth, nodes=1500000)
     # start = time.time()
     info = engine.analyse(board, limits, multipv=1)
     # end = time.time()
