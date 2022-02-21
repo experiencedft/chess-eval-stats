@@ -5,7 +5,7 @@ import numpy as np
 
 IS_TEST = True
 
-EVAL_THRESHOLD = 0.6
+EVAL_THRESHOLD = 0.7
 MOVE_CUTOFF = 10
 
 def getGameOutcomeCorrelation(game: dict, eval_threshold: float, move_cutoff: int, fens_eval_db):
@@ -50,8 +50,8 @@ def getGameOutcomeCorrelation(game: dict, eval_threshold: float, move_cutoff: in
                 outcome = 1
             elif game["outcome"] == 'Draw' and engine_eval < 0:
                 outcome = -1
-            first_advantage_side = 'White' if i%2 ==0 else 'Black'
-            print("First advantage side for each relevant game: ",first_advantage_side)
+            first_advantage_side = 'White' if i%2 == 0 else 'Black'
+            # print("First advantage side for each relevant game: ",first_advantage_side)
             if (engine_eval*outcome > 0):
                 return True, first_advantage_side
             else:
@@ -128,13 +128,15 @@ for game in games:
     if correlation is not None:
         # Increment relevant games counter
         n_relevant_games +=1
+        # print(correlation[1])
         if outcome == 'WhiteWon':
             n_wins_white_relevant += 1
         elif outcome == 'BlackWon':
             n_wins_black_relevant +=1
         elif outcome == 'Draw':
             n_draws_relevant +=1
-        elif correlation[1] == "White":
+
+        if correlation[1] == "White":
             n_white_first_advantage += 1
         elif correlation[1] == "Black":
             n_black_first_advantage += 1
@@ -153,12 +155,17 @@ for game in games:
     # If the game is not relevant, add to control observations
     else: 
         if outcome == 'WhiteWon':
-            control_white_score += 1
+            n_white_wins_control += 1
+            control_white_score.append(1)
+            control_black_score.append(0)
         elif outcome == 'BlackWon':
-            control_black_score += 1
+            n_black_wins_control += 1
+            control_white_score.append(0)
+            control_black_score.append(1)
         elif outcome == 'Draw':
-            control_white_score += 1
-            control_black_score += 1
+            n_draws_control += 1
+            control_white_score.append(1)
+            control_black_score.append(1)
 
 # Calculate expected score rate from control
 
@@ -179,39 +186,39 @@ confidence_interval_95 = [sample_observed_rate-1.96*sample_observed_rate_std, sa
 
 if IS_TEST == True:
     print("Testing for a threshold of 0.7.")
-    print("Total White wins... ")
+    print("Total White wins... ", end="")
     print("PASS") if n_white_wins_total == 3 else print("FAIL")
-    print("Total Black wins... ")
+    print("Total Black wins... ", end="")
     print("PASS") if n_black_wins_total == 3 else print("FAIL")
-    print("Total draws... ")
+    print("Total draws... ", end="")
     print("PASS") if n_draws_total == 3 else print("FAIL")
-    print("White wins control... ")
+    print("White wins control... ", end="")
     print("PASS") if n_white_wins_control == 1 else print("FAIL")
-    print("Black wins control... ")
+    print("Black wins control... ", end="")
     print("PASS") if n_black_wins_control == 1 else print("FAIL")
-    print("Draws control... ")
+    print("Draws control... ", end="")
     print("PASS") if n_draws_control == 1 else print("FAIL")
-    print("White relevant... ")
+    print("White relevant... ", end="")
     print("PASS") if n_wins_white_relevant == 2 else print("FAIL")
-    print("Black relevant... ")
+    print("Black relevant... ", end="")
     print("PASS") if n_wins_black_relevant == 2 else print("FAIL")
-    print("Draws relevant... ")
+    print("Draws relevant... ", end="")
     print("PASS") if n_draws_relevant == 2 else print("FAIL")
-    print("White correlated... ")
-    print("PASS") if n_wins_white_correlated == 1 else print("FAIL")
-    print("Black correlated... ")
-    print("PASS") if n_wins_black_correlated == 1 else print("FAIL")
-    print("n_relevant = n_white_first_advantage + n_black_first_advantage... ")
+    print("White correlated... ", end="")
+    print("PASS") if n_wins_white_correlated == 2 else print("FAIL")
+    print("Black correlated... ", end="")
+    print("PASS") if n_wins_black_correlated == 2 else print("FAIL")
+    print("n_relevant = n_white_first_advantage + n_black_first_advantage... ", end="")
     print("PASS") if n_relevant_games == n_white_first_advantage + n_black_first_advantage else print("FAIL")
-    print("Control white score... ")
+    print("Control white score... ", end="")
     print("PASS") if control_white_score == [1, 0, 1] else print("FAIL")
-    print("Control black score... ")
+    print("Control black score... ", end="")
     print("PASS") if control_black_score == [0, 1, 1] else print("FAIL")
-    print("Samples... ")
+    print("Samples... ", end="")
     print("PASS") if samples == [1, 0, 1, 1, 0, 1] else print("FAIL")
-    print("Sample expected rate... ")
+    print("Sample expected rate... ", end="")
     print("PASS") if sample_expected_rate == (3*(2/3)+3*(2/3))/6 else print("FAIL")
-    print("Sample observed rate... ")
+    print("Sample observed rate... ", end="")
     print("PASS") if sample_observed_rate == 4/6 else print("FAIL")
 
 
@@ -220,8 +227,3 @@ if IS_TEST == True:
 # print("Number of draws: ", n_draws_total)
 # print("Number of relevant games: ", n_relevant_games)
 # print("Samples: ", samples)
-
-
-
-
-    
