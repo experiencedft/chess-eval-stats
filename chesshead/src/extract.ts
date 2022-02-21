@@ -6,10 +6,11 @@ import { DBFENS, DBGAMES } from './schemas';
 import crypto from 'crypto'
 import mongoose from 'mongoose';
 import nfetch from 'node-fetch'
+import logger from './logger'
 
 const MOVES: number = 10
 const DEPTH = 21
-const databaseFilename = './data/10elorange_masters_since2000.pgn'
+const databaseFilename = './data/10elorange_2300masters_since2000_20halfmoves.pgn'
 let pgns: EvaluableGame[] = []
 
 const isClassicalGame = (pgn: string): boolean => {
@@ -23,16 +24,6 @@ const isClassicalGame = (pgn: string): boolean => {
 
     return isClassical;
 }
-
-
-let promise = new Promise(function (resolve, reject) {
-    resolve("I am surely going to get resolved!");
-
-    reject(new Error('Will this be ignored?')); // ignored
-    resolve("Ignored?"); // ignored
-});
-
-
 
 const PGNDatabaseParser = async (filename: string, callback: (pgn: string) => void) => {
     return new Promise((resolve, reject) => {
@@ -157,18 +148,19 @@ const getStockfishEval = async (fen: string, depth: number): Promise<number> => 
     return evaluation["eval"]
 }
 
-const injectCachedEvals = async () => {
-    const onePercent = Math.floor(pgns.length / 100);
+const commitEvaluations = async () => {
+    const onePercent = (pgns.length > 100)? Math.floor(pgns.length / 100) : Math.floor(pgns.length / 10);
+    logger.info(`Reporting progress every ${onePercent} games(s)`)
 
     for (let eg = 0; eg < pgns.length; eg++) {
         let fenMD5s:string[] = []
 
-        if (Math.floor(eg / onePercent) == 0) {
-            process.stdout.write(`${Math.floor(eg / onePercent)}% processed\r`)
+        if (Math.floor(eg % onePercent) == 0) {
+            logger.info(`${Math.floor(pgns.length / onePercent * eg)}% PGNs processed`)
         }
 
         for (let fen = 0; fen < pgns[eg].FENs.length; fen++) {
-            console.log(pgns[eg].FENs[fen].FEN)
+            // console.log(pgns[eg].FENs[fen].FEN)
             const thisFEN = pgns[eg].FENs[fen].FEN
 
             const secret = "This is a secret 🤫";
@@ -185,6 +177,8 @@ const injectCachedEvals = async () => {
                 // console.log(`Found cached eval`)
             } else {
                 pgns[eg].FENs[fen].eval = await getStockfishEval(pgns[eg].FENs[fen].FEN, DEPTH)
+
+                // console.log(`fecthed ${pgns[eg].FENs[fen].eval}`)
 
                 await DBFENS.create({ md5: fenHash, fen: thisFEN, eval: pgns[eg].FENs[fen].eval })
 
@@ -222,20 +216,21 @@ const main = () => {
     const mongoURI = `mongodb://${mongoHost}/${mongoDatabase}`;
 
     (async () => {
+        logger.info(`Connecting to [${mongoURI}]`)
         await mongoose.connect(`${mongoURI}`, {
             minPoolSize: mongoPoolSize,
             socketTimeoutMS: mongoSockeTimeoutMs
         })
 
-        console.log('Connected to MongoDB...')
-        console.log('Slurping games...')
+        logger.info(`Parsing PGNs from [${databaseFilename}]`)
+
         const found = await PGNDatabaseParser(databaseFilename, processPGN)
 
-        console.log(`${found}, injecting cached evals...`)
+        logger.info(`Read ${pgns.length} PGNs into memory`)
 
-        await injectCachedEvals()
+        await commitEvaluations()
 
-        console.log('done')
+        logger.info('All done, exiting.')
 
         process.exit(0)
 
