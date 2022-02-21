@@ -6,7 +6,7 @@ Attempting to answer the following question:
 
 Starting with X = 0.7.
 
-``10elorange_masters_since2000.pgn``: Filtered games from Caissabase 2022_01_08 with the following criteria:
+``10elorange_2300masters_since2000_20halfmoves.pgn``: Filtered games from Caissabase 2022_01_08 with the following criteria:
 
 - Only titled players
 - Greater than 2400 ELO
