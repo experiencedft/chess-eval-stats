@@ -1,6 +1,6 @@
 import chess
 import chess.engine
-import time
+# import time
 
 import cgi
 import json
@@ -31,10 +31,10 @@ def getLocalEvalFromFEN():
     engine = chess.engine.SimpleEngine.popen_uci(ENGINE_PATH)
     board = chess.Board(fen)
     limits = chess.engine.Limit(depth=depth, nodes=1500000)
-    start = time.time()
+    # start = time.time()
     info = engine.analyse(board, limits, multipv=1)
-    end = time.time()
-    print("Runtime: ", end - start)
+    # end = time.time()
+    # print("Runtime: ", end - start)
     engine.quit()
     eval = info[0]["score"].white().score()
     response = {"eval": eval/100}
