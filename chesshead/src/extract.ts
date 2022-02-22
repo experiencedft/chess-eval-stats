@@ -10,7 +10,7 @@ import logger from './logger'
 
 const MOVES: number = 10
 const DEPTH = 21
-const databaseFilename = './data/10elorange_2300masters_since2000_20halfmoves.pgn'
+const databaseFilename = './data/test_db.pgn'
 let pgns: EvaluableGame[] = []
 
 const isClassicalGame = (pgn: string): boolean => {
@@ -139,7 +139,14 @@ const processPGN = (pgn: string) => {
 }
 
 const getStockfishEval = async (fen: string, depth: number): Promise<number> => {
-    const URL = `http://127.0.0.1:8080/cgi-bin/getLocalEvalFromFEN.py?fen=${fen}&depth=${depth}`
+
+    // Uncomment here if running with Python default http.server 
+
+    // const URL = `http://127.0.0.1:8080/cgi-bin/getLocalEvalFromFEN.py?fen=${fen}&depth=${depth}`
+    
+    // Uncomment here if running with Flask
+
+    const URL = `http://127.0.0.1:8080?fen=${fen}&depth=${depth}`
 
     let res: Response = await nfetch(URL)
 
