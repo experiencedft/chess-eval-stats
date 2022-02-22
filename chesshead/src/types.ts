@@ -11,12 +11,16 @@ export enum GameOutcome {
 } 
 
 export type FENObject = {
+    md5?: string;
+    gameIndex: number;
     FEN: string;
     eval?: number;
 }
 
 export type EvaluableGame = {
+    md5?: string;
     outcome: GameOutcome;
     FENs: FENObject[];
     header: string[];
+    dirty: boolean;
 }

@@ -16,8 +16,8 @@ ENGINE_PATH = "/usr/local/bin/stockfish"
 if 'STOCKFISH' in os.environ:
     ENGINE_PATH = os.environ.get('STOCKFISH')
 
-ENGINE_PATH = "C:/Users/neptu/Downloads/stockfish_14.1_win_x64_avx2/stockfish_14.1_win_x64_avx2.exe"
-# ENGINE_PATH = "/usr/local/bin/stockfish"
+# ENGINE_PATH = "C:/Users/neptu/Downloads/stockfish_14.1_win_x64_avx2/stockfish_14.1_win_x64_avx2.exe"
+ENGINE_PATH = "/usr/local/bin/stockfish"
 
 app = Flask(__name__)
 
