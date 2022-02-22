@@ -14,7 +14,7 @@ const MOVES: number = 10
 const DEPTH = 21
 const BATCH = 24
 
-const databaseFilename = './data/test_db.pgn'
+const databaseFilename = './data/10elorange_2300masters_since2000_20halfmoves.pgn'
 let pgns: EvaluableGame[] = []
 
 const isClassicalGame = (pgn: string): boolean => {
@@ -183,7 +183,7 @@ const getStockfishEval = async (fen: FENObject, depth: number): Promise<FENObjec
 }
 
 const getStockfishEvals = async (fens: FENObject[], depth: number): Promise<FENObject[]> => {
-    logger.info(`Retrieving ${fens.length} evals`)
+    // logger.info(`Retrieving ${fens.length} evals`)
     const evals: FENObject[] =
         await Promise.all(fens.map(async (fen) => await getStockfishEval(fen, depth)))
 
@@ -193,7 +193,7 @@ const getStockfishEvals = async (fens: FENObject[], depth: number): Promise<FENO
 }
 
 const commitProcessedGames = async () => {
-    logger.info("Committing processed games...")
+    // logger.info("Committing processed games...")
     // let countDirty = 0
     // let countPartials = 0
     // let countClean = 0
