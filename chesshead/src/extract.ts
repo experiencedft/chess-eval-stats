@@ -8,10 +8,11 @@ import mongoose from 'mongoose';
 import nfetch from 'node-fetch'
 import logger from './logger'
 import _ from 'underscore'
+import { performance } from 'perf_hooks';
 
 const MOVES: number = 10
 const DEPTH = 21
-const BATCH = 20
+const BATCH = 24
 
 const databaseFilename = './data/test_db.pgn'
 let pgns: EvaluableGame[] = []
@@ -365,7 +366,7 @@ const main = () => {
         await commitEvaluations()
 
         logger.info('All done, exiting.')
-
+        console.log("Total runtime: ", performance.now())
         process.exit(0)
 
     })();
