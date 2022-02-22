@@ -232,24 +232,25 @@ const processMultipleEvals = async (batch: FENObject[]) => {
 
     for (let ef = 0; ef < evaldFENs.length; ef++) {
         const fenCopy = evaldFENs[ef]
-        const gameIndex = evaldFENs[ef].gameIndex
-        for (let ogFEN = 0; ogFEN < pgns[gameIndex].FENs.length; ogFEN++) {
-            if (pgns[gameIndex].FENs[ogFEN].md5 == fenCopy.md5) {
-                pgns[gameIndex].FENs[ogFEN].eval = fenCopy.eval;
-                await DBFENS.create({ md5: fenCopy.md5, fen: fenCopy.FEN, eval: fenCopy.eval })
+        await DBFENS.create({ md5: fenCopy.md5, fen: fenCopy.FEN, eval: fenCopy.eval })
+        
+        for (let eg = 0; eg < pgns.length; eg++) {
+            for (let fen = 0; fen < pgns[eg].FENs.length; fen++) {
+                if (pgns[eg].FENs[fen].md5 == fenCopy.md5) {
+                    pgns[eg].FENs[fen].eval = fenCopy.eval;
+                }
             }
         }
     }
-
 }
 
 const commitEvaluations = async () => {
     let aBatchOfFENs: FENObject[] = []
 
-    let printEvery:number = 0
+    let printEvery: number = 0
     if (pgns.length > 100) printEvery = Math.floor(pgns.length / 100)
     else if (pgns.length > 10) printEvery = Math.floor(pgns.length / 10)
-    else printEvery = 1 
+    else printEvery = 1
 
     for (let eg = 0; eg < pgns.length; eg++) {
         for (let fen = 0; fen < pgns[eg].FENs.length; fen++) {
@@ -257,12 +258,14 @@ const commitEvaluations = async () => {
             if (!(one === undefined || one === null)) {
                 pgns[eg].FENs[fen].eval = one.eval;
             } else {
-                aBatchOfFENs.push(pgns[eg].FENs[fen])
+                if (!_.some(aBatchOfFENs, (el) => el.md5 == pgns[eg].FENs[fen].md5)) {
+                    aBatchOfFENs.push(pgns[eg].FENs[fen])
 
-                if (aBatchOfFENs.length == BATCH) {
-                    await processMultipleEvals(aBatchOfFENs)
-                    aBatchOfFENs = []
-                    await commitProcessedGames()
+                    if (aBatchOfFENs.length == BATCH) {
+                        await processMultipleEvals(aBatchOfFENs)
+                        aBatchOfFENs = []
+                        await commitProcessedGames()
+                    }
                 }
             }
         }
