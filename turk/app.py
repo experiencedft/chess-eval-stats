@@ -16,8 +16,8 @@ ENGINE_PATH = "/usr/local/bin/stockfish"
 if 'STOCKFISH' in os.environ:
     ENGINE_PATH = os.environ.get('STOCKFISH')
 
-# ENGINE_PATH = "C:/Users/neptu/Downloads/stockfish_14.1_win_x64_avx2/stockfish_14.1_win_x64_avx2.exe"
-ENGINE_PATH = "/usr/local/bin/stockfish"
+ENGINE_PATH = "C:/Users/neptu/Downloads/stockfish_14.1_win_x64_avx2/stockfish_14.1_win_x64_avx2.exe"
+# ENGINE_PATH = "/usr/local/bin/stockfish"
 
 app = Flask(__name__)
 
@@ -30,7 +30,7 @@ def getLocalEvalFromFEN():
     depth = request.args.get('depth')
     engine = chess.engine.SimpleEngine.popen_uci(ENGINE_PATH)
     board = chess.Board(fen)
-    limits = chess.engine.Limit(depth=depth)
+    limits = chess.engine.Limit(depth=depth, nodes=1500000)
     start = time.time()
     info = engine.analyse(board, limits, multipv=1)
     end = time.time()
