@@ -186,6 +186,8 @@ confidence_interval_95 = [sample_observed_rate-1.96*sample_observed_rate_std, sa
 
 if IS_TEST == True:
     print("Testing for a threshold of 0.7.")
+    print("Total number of unique FENs... ", end="")
+    print("PASS") if fen_evals_db.count_documents({}) == 37 else print("FAIL")
     print("Total White wins... ", end="")
     print("PASS") if n_white_wins_total == 3 else print("FAIL")
     print("Total Black wins... ", end="")
