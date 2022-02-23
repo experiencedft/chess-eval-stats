@@ -3,10 +3,26 @@
 from pymongo import MongoClient
 import numpy as np
 
-IS_TEST = True
+IS_TEST = False
 
+# Control threshold slightly above the initial white advantage.
+CONTROL_THRESHOLD = 0.45
 EVAL_THRESHOLD = 0.7
 MOVE_CUTOFF = 10
+
+def isGameControl(game: dict, control_threshold: float, fens_eval_db):
+    '''
+    Check if the game has all moves below control threshold.
+    '''
+    fens = game["fens"]
+    evals = np.array([])
+    for fen in fens:
+        evals = np.append(evals, fens_eval_db.find_one({'md5': fen})["eval"])
+    if (all(abs(evals) < CONTROL_THRESHOLD)):
+        return True
+    else: 
+        return False
+
 
 def getGameOutcomeCorrelation(game: dict, eval_threshold: float, move_cutoff: int, fens_eval_db):
     '''
@@ -74,6 +90,8 @@ n_draws_total = 0
 n_black_wins_control = 0
 n_white_wins_control = 0
 n_draws_control = 0
+n_control_games = 0
+
 # Number of draws
 
 # Number of relevant games and wins and draws 
@@ -110,7 +128,12 @@ samples = []
 # Define iterable cursor over all members of the collection
 games = games_db.find()
 
+i = 0
+
 for game in games:
+
+    if i% (n_games//20) == 0:
+        print("Processing... ", round(100*(i/n_games)), "%")
 
     outcome = game['outcome']
 
@@ -152,8 +175,10 @@ for game in games:
             n_correlated += 1
         else: 
             samples.append(0)
-    # If the game is not relevant, add to control observations
-    else: 
+
+    # If the game is not relevant, check if it can be added to control
+    elif isGameControl(game, CONTROL_THRESHOLD, fen_evals_db): 
+        n_control_games += 1
         if outcome == 'WhiteWon':
             n_white_wins_control += 1
             control_white_score.append(1)
@@ -166,6 +191,7 @@ for game in games:
             n_draws_control += 1
             control_white_score.append(1)
             control_black_score.append(1)
+    i+=1
 
 # Calculate expected score rate from control
 
@@ -178,14 +204,16 @@ std_white_score_rate = np.std(control_white_score)
 
 sample_expected_rate = (n_white_first_advantage*expected_white_score_rate + n_black_first_advantage*expected_black_score_rate)/n_relevant_games
 sample_expected_rate_std = std_white_score_rate + std_black_score_rate
+expected_rate_95_confidence_interval = [sample_expected_rate - 1.96*sample_expected_rate_std, sample_expected_rate + 1.96*sample_expected_rate_std]
+
 sample_observed_rate = np.mean(samples)
 sample_observed_rate_std = np.std(samples)
-confidence_interval_95 = [sample_observed_rate-1.96*sample_observed_rate_std, sample_observed_rate+1.96*sample_observed_rate_std]
+observed_rate_95_confidence_interval = [sample_observed_rate-1.96*sample_observed_rate_std, sample_observed_rate+1.96*sample_observed_rate_std]
 
 # TEST WITH TEST_DB.PGN
 
 if IS_TEST == True:
-    print("Testing for a threshold of 0.7.")
+    print("Testing for a threshold of {EVAL_THRESHOLD}.")
     print("Total number of unique FENs... ", end="")
     print("PASS") if fen_evals_db.count_documents({}) == 37 else print("FAIL")
     print("Total White wins... ", end="")
@@ -222,6 +250,18 @@ if IS_TEST == True:
     print("PASS") if sample_expected_rate == (3*(2/3)+3*(2/3))/6 else print("FAIL")
     print("Sample observed rate... ", end="")
     print("PASS") if sample_observed_rate == 4/6 else print("FAIL")
+
+else: 
+
+    print("Total number of games: ", games_db.count_documents({}))
+    print("Number of games with an advantage above threshold: ", n_relevant_games)
+    print("Number of control games: ", n_control_games)
+    print("Total number of unique positions: ", fen_evals_db.count_documents({}))
+    print("Expected win rate from control: ", sample_expected_rate)
+    print("Observed win rate for first advantage side: ", sample_observed_rate)
+    
+
+
 
 
 # print("Number of white wins: ", n_white_wins_total)
