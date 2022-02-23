@@ -36,7 +36,12 @@ def getLocalEvalFromFEN():
     # end = time.time()
     # print("Runtime: ", end - start)
     engine.quit()
-    eval = info[0]["score"].white().score()
+    mate = info[0]["score"].white().mate()
+    if mate != None: 
+        eval = 100000000 if (mate > 0) else -100000000
+    else: 
+        eval = info[0]["score"].white().score()
+    # print("Evaluation: ", eval)
     response = {"eval": eval/100}
     print("Content-Type: application/json;")
     print()
