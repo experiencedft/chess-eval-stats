@@ -2,13 +2,17 @@
 
 from pymongo import MongoClient
 import numpy as np
+from scipy.stats import pearsonr 
 
 IS_TEST = False
 
 # Control threshold slightly above the initial white advantage.
-CONTROL_THRESHOLD = 0.45
-EVAL_THRESHOLD = 0.7
+CONTROL_THRESHOLD = 0.5
+EVAL_THRESHOLD = 0.6
 MOVE_CUTOFF = 10
+
+# DETERMINE IF WE'RE STUDYING SCORING RATE OR WIN RATE
+SCORE = False
 
 def isGameControl(game: dict, control_threshold: float, fens_eval_db):
     '''
@@ -62,10 +66,14 @@ def getGameOutcomeCorrelation(game: dict, eval_threshold: float, move_cutoff: in
         engine_eval = fens_eval_db.find_one({'md5': fen})["eval"]
         if abs(engine_eval) > eval_threshold:
             # print(engine_eval)
-            if game["outcome"] == 'Draw' and engine_eval > 0:
-                outcome = 1
-            elif game["outcome"] == 'Draw' and engine_eval < 0:
-                outcome = -1
+            if SCORE == True:
+                if game["outcome"] == 'Draw' and engine_eval > 0:
+                    outcome = 1
+                elif game["outcome"] == 'Draw' and engine_eval < 0:
+                    outcome = -1
+            else:
+                if game["outcome"] == 'Draw':
+                    outcome = 0
             first_advantage_side = 'White' if i%2 == 0 else 'Black'
             # print("First advantage side for each relevant game: ",first_advantage_side)
             if (engine_eval*outcome > 0):
@@ -119,6 +127,8 @@ n_correlated = 0
 
 control_white_score = []
 control_black_score = []
+n_white_scores_control = 0
+n_black_scores_control = 0
 
 # An array of observation samples for the random variable.
 # X  = 1 if the first to get an advantage above threshold 
@@ -180,34 +190,52 @@ for game in games:
     elif isGameControl(game, CONTROL_THRESHOLD, fen_evals_db): 
         n_control_games += 1
         if outcome == 'WhiteWon':
+            n_white_scores_control +=1
             n_white_wins_control += 1
             control_white_score.append(1)
             control_black_score.append(0)
         elif outcome == 'BlackWon':
+            n_black_scores_control += 1
             n_black_wins_control += 1
             control_white_score.append(0)
             control_black_score.append(1)
         elif outcome == 'Draw':
             n_draws_control += 1
-            control_white_score.append(1)
-            control_black_score.append(1)
+            if SCORE == True: 
+                n_white_scores_control += 1
+                n_black_scores_control += 1
+                control_white_score.append(1)
+                control_black_score.append(1)
+            else:
+                control_white_score.append(0)
+                control_black_score.append(0)
     i+=1
 
-# Calculate expected score rate from control
+# Calculate expected score or win rate from control
 
 expected_black_score_rate = np.mean(control_black_score) 
-std_black_score_rate = np.std(control_black_score)
 expected_white_score_rate = np.mean(control_white_score) 
-std_white_score_rate = np.std(control_white_score)
+if SCORE == True:
+    std_black_score_rate = np.std(control_black_score)/np.sqrt(n_black_scores_control)
+    std_white_score_rate = np.std(control_white_score)/np.sqrt(n_white_scores_control)
+else: 
+    std_black_score_rate = np.std(control_black_score)/(np.sqrt(n_black_wins_control)+np.sqrt(n_draws_control))
+    std_white_score_rate = np.std(control_white_score)/(np.sqrt(n_white_wins_control)+np.sqrt(n_draws_control))
+
+# Calculate covariance between the two variables White Scores and Black Scores
+white_black_score_correlation = pearsonr(control_white_score, control_black_score)[0]
+
 
 # Calculate relevant sample expected rate and observed rate
 
 sample_expected_rate = (n_white_first_advantage*expected_white_score_rate + n_black_first_advantage*expected_black_score_rate)/n_relevant_games
-sample_expected_rate_std = std_white_score_rate + std_black_score_rate
+
+sample_expected_rate_std = ((1/n_relevant_games)*np.sqrt((n_white_first_advantage*std_white_score_rate)**2 + (n_black_first_advantage*std_black_score_rate)**2 + 2*n_white_first_advantage*n_black_first_advantage*white_black_score_correlation*std_black_score_rate*std_white_score_rate))
+
 expected_rate_95_confidence_interval = [sample_expected_rate - 1.96*sample_expected_rate_std, sample_expected_rate + 1.96*sample_expected_rate_std]
 
 sample_observed_rate = np.mean(samples)
-sample_observed_rate_std = np.std(samples)
+sample_observed_rate_std = np.std(samples)/np.sqrt(n_relevant_games)
 observed_rate_95_confidence_interval = [sample_observed_rate-1.96*sample_observed_rate_std, sample_observed_rate+1.96*sample_observed_rate_std]
 
 # TEST WITH TEST_DB.PGN
@@ -253,12 +281,25 @@ if IS_TEST == True:
 
 else: 
 
-    print("Total number of games: ", games_db.count_documents({}))
-    print("Number of games with an advantage above threshold: ", n_relevant_games)
-    print("Number of control games: ", n_control_games)
-    print("Total number of unique positions: ", fen_evals_db.count_documents({}))
-    print("Expected win rate from control: ", sample_expected_rate)
-    print("Observed win rate for first advantage side: ", sample_observed_rate)
+    if SCORE == True:
+        print("Total number of games: ", games_db.count_documents({}))
+        print("Total number of unique positions: ", fen_evals_db.count_documents({}))
+        print("Number of control games: ", n_control_games)
+        print("Expected white score rate: ", expected_white_score_rate, " +/- ", std_white_score_rate)
+        print("Expected black score rate: ", expected_black_score_rate, " +/- ", std_black_score_rate)
+        print("Number of games with an advantage above threshold: ", n_relevant_games)
+        print("Control score rate confidence interval: ", expected_rate_95_confidence_interval)
+        print("Score rate confidence interval for first advantage side: ", observed_rate_95_confidence_interval)
+    else: 
+        print("Total number of games: ", games_db.count_documents({}))
+        print("Total number of unique positions: ", fen_evals_db.count_documents({}))
+        print("Number of control games: ", n_control_games)
+        print("Expected white win rate: ", expected_white_score_rate, " +/- ", std_white_score_rate)
+        print("Expected black win rate: ", expected_black_score_rate, " +/- ", std_black_score_rate)
+        print("Number of games with an advantage above threshold: ", n_relevant_games)
+        print("Control win rate confidence interval: ", expected_rate_95_confidence_interval)
+        print("Win rate confidence interval for first advantage side: ", observed_rate_95_confidence_interval)
+        
     
 
 
